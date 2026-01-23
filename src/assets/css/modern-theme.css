@@ -1,0 +1,280 @@
+/* Modern Minimalist Design System (2025) - Commercial Grade */
+@import url('https://rsms.me/inter/inter.css');
+
+:root {
+    /* =========================================
+     Color Palette (Professional & Trustworthy)
+     ========================================= */
+    --primary: #000000;
+    /* Black for Authority */
+    --primary-hover: #ff0000;
+    /* Red for Energy on hover */
+    --secondary: #212529;
+    --accent: #ff0000;
+    /* Iconic Red */
+
+    --bg-body: #FFFFFF;
+    --bg-surface: #F8FAFC;
+    /* Very light slate for contrast */
+    --bg-card: #FFFFFF;
+
+    --text-main: #0F172A;
+    /* Slate 900 - Sharp text */
+    --text-secondary: #64748B;
+    /* Slate 500 */
+    --text-muted: #94A3B8;
+
+    --border-light: #E2E8F0;
+    --border-medium: #CBD5E1;
+
+    /* =========================================
+     Typography (Inter - Clean & Modern)
+     ========================================= */
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    /* =========================================
+     Spacing & Layout
+     ========================================= */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-section: 80px;
+    /* Commercial grade spacing */
+
+    --container-width: 1240px;
+    /* Slightly wider for modern feel */
+
+    /* =========================================
+     Effects (Premium Feel)
+     ========================================= */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    /* Softer, more modern corners */
+    --radius-pill: 9999px;
+
+    /* Refined Shadows (Stripe-like) */
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-card-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-float: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =========================================
+   Global Reset & Base
+   ========================================= */
+body {
+    font-family: var(--font-body);
+    color: var(--text-main);
+    background-color: var(--bg-surface);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-heading);
+    color: var(--text-main);
+    font-weight: 800;
+    /* Bolder headings */
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.75em;
+}
+
+h1 {
+    font-size: 3.5rem;
+}
+
+/* Big Hero Headline */
+h2 {
+    font-size: 2.25rem;
+}
+
+/* Section Titles */
+h3 {
+    font-size: 1.5rem;
+}
+
+a {
+    color: var(--text-main);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+a:hover {
+    color: var(--primary);
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* =========================================
+   Component: Buttons (Premium)
+   ========================================= */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 28px;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: var(--radius-pill);
+    /* Pill buttons are very trendy */
+    border: 1px solid transparent;
+    transition: var(--transition);
+    cursor: pointer;
+    letter-spacing: 0.01em;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(255, 0, 0, 0.3);
+}
+
+.btn-light {
+    background-color: #ffffff;
+    border-color: var(--border-light);
+    color: var(--text-main);
+}
+
+.btn-light:hover {
+    background-color: var(--bg-surface);
+    border-color: var(--border-medium);
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+/* =========================================
+   Component: Cards (Modern Grid)
+   ========================================= */
+.card-product-grid {
+    background: var(--bg-card);
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: var(--transition);
+    overflow: hidden;
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-product-grid:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-8px);
+    /* Significant lift */
+}
+
+.card-product-grid .img-wrap {
+    height: 280px;
+    /* Taller images */
+    overflow: hidden;
+    position: relative;
+    background-color: #f1f5f9;
+}
+
+.card-product-grid .img-wrap img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    /* Crucial */
+    transition: transform 0.5s ease;
+}
+
+.card-product-grid:hover .img-wrap img {
+    transform: scale(1.05);
+    /* Subtle zoom */
+}
+
+.card-product-grid .info-wrap {
+    padding: var(--spacing-lg);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-product-grid .title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-xs);
+    display: block;
+}
+
+.card-product-grid .price {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: var(--spacing-md);
+    display: block;
+}
+
+/* =========================================
+   Component: Header
+   ========================================= */
+.section-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-sm);
+    padding: 12px 0;
+}
+
+/* =========================================
+   Utilities
+   ========================================= */
+.section-padding {
+    padding-top: var(--spacing-section);
+    padding-bottom: var(--spacing-section);
+}
+
+.title-section {
+    position: relative;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.shadow-card {
+    box-shadow: var(--shadow-card);
+}
+
+.shadow-hover:hover {
+    box-shadow: var(--shadow-card-hover);
+}
