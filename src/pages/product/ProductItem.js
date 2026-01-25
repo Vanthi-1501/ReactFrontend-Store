@@ -78,7 +78,7 @@ const ProductItem = ({ product }) => {
             </div>
 
             {/* Inline styles for hover effects specific to this component */}
-            <style jsx>{`
+            <style>{`
                 .product-card:hover img {
                     transform: scale(1.05);
                 }

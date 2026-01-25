@@ -1,53 +1,175 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 // import { updateProfile } from '../../services/apiService'; // Assuming this exists or using a generic PUT
 
 const Profile = () => {
-    const { user, login } = useAuth(); // login or a method to update user context
+    const { user, login } = useAuth();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
+        mobileNumber: '',
         address: '',
         city: '',
         country: 'Vietnam'
     });
+
+    // Address State
+    const [provinces, setProvinces] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [wards, setWards] = useState([]);
+
+    const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+    const [selectedDistrictCode, setSelectedDistrictCode] = useState("");
+    const [selectedWardCode, setSelectedWardCode] = useState("");
+
+    const [selectedProvinceName, setSelectedProvinceName] = useState("");
+    const [selectedDistrictName, setSelectedDistrictName] = useState("");
+    const [selectedWardName, setSelectedWardName] = useState("");
+    const [specificAddress, setSpecificAddress] = useState("");
+
+    const [avatar, setAvatar] = useState(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        console.log("Profile - User from context:", user);
-        if (user) {
-            setFormData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
-                email: user.email || '',
-                phone: user.mobileNumber || '',
-                address: user.address || '',
-                city: user.city || '',
-                country: user.country || 'Vietnam'
-            });
+        const userId = user?.id || user?.userId;
+        if (userId) {
+            // Fetch fresh data from API
+            fetch(`http://127.0.0.1:8080/api/public/users/${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Fetched User Data:", data);
+                    setFormData({
+                        firstName: data.firstName || '',
+                        lastName: data.lastName || '',
+                        email: data.email || '',
+                        mobileNumber: data.mobileNumber || '',
+                        address: data.addressLine || (data.address && data.address.street) || '',
+                        city: data.city || (data.address && data.address.city) || '',
+                        country: data.country || (data.address && data.address.country) || 'Vietnam'
+                    });
+                    setAvatar(data.image);
+                })
+                .catch(err => console.error("Failed to fetch user profile:", err));
         }
     }, [user]);
+
+    // Fetch Provinces
+    useEffect(() => {
+        const fetchProvinces = async () => {
+            try {
+                const response = await axios.get("https://provinces.open-api.vn/api/?depth=1");
+                setProvinces(response.data);
+            } catch (error) {
+                console.error("Error fetching provinces:", error);
+            }
+        };
+        fetchProvinces();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // Handle Address Changes
+    const handleProvinceChange = async (e) => {
+        const code = e.target.value;
+        const province = provinces.find(p => p.code == code);
+
+        setSelectedProvinceCode(code);
+        setSelectedProvinceName(province ? province.name : "");
+        setSelectedDistrictCode("");
+        setSelectedWardCode("");
+        setDistricts([]);
+        setWards([]);
+
+        if (code) {
+            try {
+                const response = await axios.get(`https://provinces.open-api.vn/api/p/${code}?depth=2`);
+                setDistricts(response.data.districts);
+            } catch (error) {
+                console.error("Error fetching districts:", error);
+            }
+        }
+    };
+
+    const handleDistrictChange = async (e) => {
+        const code = e.target.value;
+        const district = districts.find(d => d.code == code);
+
+        setSelectedDistrictCode(code);
+        setSelectedDistrictName(district ? district.name : "");
+        setSelectedWardCode("");
+        setWards([]);
+
+        if (code) {
+            try {
+                const response = await axios.get(`https://provinces.open-api.vn/api/d/${code}?depth=2`);
+                setWards(response.data.wards);
+            } catch (error) {
+                console.error("Error fetching wards:", error);
+            }
+        }
+    };
+
+    const handleWardChange = (e) => {
+        const code = e.target.value;
+        const ward = wards.find(w => w.code == code);
+        setSelectedWardCode(code);
+        setSelectedWardName(ward ? ward.name : "");
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Simulate API call or use actual one
-            // await updateProfile(user.id, formData);
-            // Update local context
-            // login({ ...user, ...formData }); 
-            alert("Cập nhật thông tin thành công! (Demo)");
+            let finalAddressLine = formData.address || "";
+            let finalCity = formData.city || "";
+
+            // If user selected new address components
+            if (selectedProvinceName && selectedDistrictName && selectedWardName) {
+                finalAddressLine = `${specificAddress}, ${selectedWardName}, ${selectedDistrictName}`;
+                finalCity = selectedProvinceName;
+            }
+
+            const payload = {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                mobileNumber: formData.mobileNumber,
+                city: finalCity,
+                addressLine: finalAddressLine,
+                country: formData.country
+            };
+
+            const userId = user.id || user.userId;
+            const response = await fetch(`http://127.0.0.1:8080/api/public/users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const updatedUser = await response.json();
+                // Update local context
+                login(localStorage.getItem("authToken"), updatedUser);
+                alert("Cập nhật thông tin thành công!");
+
+                // Reset address selection
+                setSelectedProvinceCode("");
+                setSelectedDistrictCode("");
+                setSelectedWardCode("");
+                setSpecificAddress("");
+            } else {
+                const errorText = await response.text();
+                throw new Error(`Failed to update: ${response.status} - ${errorText}`);
+            }
         } catch (error) {
             console.error("Update failed:", error);
-            alert("Có lỗi xảy ra.");
+            alert(`Có lỗi xảy ra: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -146,40 +268,74 @@ const Profile = () => {
                                                 <div className="form-group col-md-6">
                                                     <label className="font-weight-bold small">Số điện thoại</label>
                                                     <input
-                                                        name="phone"
+                                                        name="mobileNumber"
                                                         type="text"
                                                         className="form-control"
-                                                        value={formData.phone}
+                                                        value={formData.mobileNumber}
                                                         onChange={handleChange}
                                                         placeholder="0123456789"
                                                         style={{ height: '45px' }}
                                                     />
                                                 </div>
-                                                <div className="form-group col-md-6">
-                                                    <label className="font-weight-bold small">Thành phố</label>
-                                                    <input
-                                                        name="city"
-                                                        type="text"
-                                                        className="form-control"
-                                                        value={formData.city}
-                                                        onChange={handleChange}
-                                                        placeholder="Hồ Chí Minh"
-                                                        style={{ height: '45px' }}
-                                                    />
+                                                <div className="form-row">
+                                                    <div className="form-group col-md-4">
+                                                        <label className="font-weight-bold small">Tỉnh / Thành phố</label>
+                                                        <select
+                                                            className="form-control"
+                                                            value={selectedProvinceCode}
+                                                            onChange={handleProvinceChange}
+                                                            style={{ height: '45px' }}
+                                                        >
+                                                            <option value="">-- Chọn Tỉnh/Thành --</option>
+                                                            {provinces.map(p => (
+                                                                <option key={p.code} value={p.code}>{p.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="form-group col-md-4">
+                                                        <label className="font-weight-bold small">Quận / Huyện</label>
+                                                        <select
+                                                            className="form-control"
+                                                            value={selectedDistrictCode}
+                                                            onChange={handleDistrictChange}
+                                                            disabled={!selectedProvinceCode}
+                                                            style={{ height: '45px' }}
+                                                        >
+                                                            <option value="">-- Chọn Quận/Huyện --</option>
+                                                            {districts.map(d => (
+                                                                <option key={d.code} value={d.code}>{d.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="form-group col-md-4">
+                                                        <label className="font-weight-bold small">Phường / Xã</label>
+                                                        <select
+                                                            className="form-control"
+                                                            value={selectedWardCode}
+                                                            onChange={handleWardChange}
+                                                            disabled={!selectedDistrictCode}
+                                                            style={{ height: '45px' }}
+                                                        >
+                                                            <option value="">-- Chọn Phường/Xã --</option>
+                                                            {wards.map(w => (
+                                                                <option key={w.code} value={w.code}>{w.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             <div className="form-group">
-                                                <label className="font-weight-bold small">Địa chỉ</label>
+                                                <label className="font-weight-bold small">Số nhà, Tên đường</label>
                                                 <input
-                                                    name="address"
                                                     type="text"
                                                     className="form-control"
-                                                    value={formData.address}
-                                                    onChange={handleChange}
-                                                    placeholder="123 Đường ABC, Quận XYZ"
+                                                    value={specificAddress}
+                                                    onChange={(e) => setSpecificAddress(e.target.value)}
+                                                    placeholder="123 Đường ABC"
                                                     style={{ height: '45px' }}
                                                 />
+                                                <small className="text-muted">Địa chỉ hiện tại: {formData.addressLine || formData.address}</small>
                                             </div>
 
                                             <div className="form-group">
@@ -210,25 +366,58 @@ const Profile = () => {
                                         <div className="col-md-4 text-center">
                                             <div className="mb-3">
                                                 <img
-                                                    src="https://placehold.co/200x200/e0e0e0/666?text=Avatar"
+                                                    src={avatar ? `http://127.0.0.1:8080/api/public/users/${user.id}/image` : "https://placehold.co/200x200/e0e0e0/666?text=Avatar"}
                                                     className="rounded-circle border shadow-sm"
                                                     alt="Avatar"
                                                     style={{ width: '150px', height: '150px', objectFit: 'cover' }}
                                                 />
                                             </div>
-                                            <button className="btn btn-outline-secondary btn-sm">
+                                            <input
+                                                type="file"
+                                                id="avatarInput"
+                                                style={{ display: 'none' }}
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        const formData = new FormData();
+                                                        formData.append("image", file);
+                                                        try {
+                                                            const res = await fetch(`http://127.0.0.1:8080/api/public/users/${user.id}/image`, {
+                                                                method: 'POST',
+                                                                body: formData
+                                                            });
+                                                            if (res.ok) {
+                                                                alert("Upload thành công!");
+                                                                window.location.reload();
+                                                            } else {
+                                                                alert("Upload thất bại!");
+                                                            }
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                            alert("Lỗi upload.");
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary btn-sm"
+                                                onClick={() => document.getElementById('avatarInput').click()}
+                                            >
                                                 <i className="fa fa-camera mr-2"></i>
                                                 Đổi ảnh đại diện
                                             </button>
                                         </div>
                                     </div>
+
                                 </form>
                             </div>
                         </div>
                     </main>
-                </div>
-            </div>
-        </section>
+                </div >
+            </div >
+        </section >
     );
 };
 

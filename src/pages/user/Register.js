@@ -2,22 +2,28 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { REGISTER } from '../../services/apiService';
 
+const mobileRegex = /^[0-9]{10}$/;
+
 const Register = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         email: '',
-        password: '',
-        confirmPassword: '',
         mobileNumber: '',
-        city: '',
-        addressLine: ''
+        password: '',
+        confirmPassword: ''
     });
-    const [error, setError] = useState(null);
+
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -29,26 +35,24 @@ const Register = () => {
             return;
         }
 
+        if (!mobileRegex.test(formData.mobileNumber)) {
+            setError("Số điện thoại không hợp lệ (phải có 10 số)");
+            return;
+        }
+
         try {
             const payload = {
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 email: formData.email,
                 password: formData.password,
-                city: formData.city || "",
-                addressLine: formData.addressLine || "",
-                country: "Vietnam"
+                mobileNumber: formData.mobileNumber
             };
-
-            // Only add mobileNumber if it's provided and valid (10 digits)
-            if (formData.mobileNumber && formData.mobileNumber.length === 10) {
-                payload.mobileNumber = formData.mobileNumber;
-            }
 
             const response = await REGISTER(payload);
 
             if (response) {
-                alert("Đăng ký thành công! Vui lòng đăng nhập.");
+                alert("Đăng ký thành công! Vui lòng cập nhật thêm thông tin trong trang cá nhân.");
                 navigate("/login");
             }
         } catch (err) {
@@ -124,33 +128,6 @@ const Register = () => {
                                 placeholder="0123456789"
                                 style={{ height: '45px' }}
                             />
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group col-md-6">
-                                <label className="font-weight-bold small">Thành phố</label>
-                                <input
-                                    name="city"
-                                    type="text"
-                                    className="form-control border-0 bg-light"
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                    placeholder="Hồ Chí Minh"
-                                    style={{ height: '45px' }}
-                                />
-                            </div>
-                            <div className="form-group col-md-6">
-                                <label className="font-weight-bold small">Địa chỉ</label>
-                                <input
-                                    name="addressLine"
-                                    type="text"
-                                    className="form-control border-0 bg-light"
-                                    value={formData.addressLine}
-                                    onChange={handleChange}
-                                    placeholder="123 Đường ABC, Quận XYZ"
-                                    style={{ height: '45px' }}
-                                />
-                            </div>
                         </div>
 
                         <div className="form-row">

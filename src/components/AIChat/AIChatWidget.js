@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AIChatWidget.css';
+import { useCart } from '../../context/CartContext';
 
 const AIChatWidget = () => {
+    const { addToCart } = useCart(); // Access CartContext
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
         { role: 'ai', content: 'Xin chào! Tôi là trợ lý AI của Nike Shop. Tôi có thể giúp gì cho bạn?' }
@@ -31,8 +33,16 @@ const AIChatWidget = () => {
         try {
             console.log('Sending request to AI...', { message: query });
 
+            // 1. Check if Backend is reachable first (Fast Fail)
+            try {
+                const healthCheck = await fetch('http://127.0.0.1:8080/api/public/ai/test', { method: 'GET' });
+                if (!healthCheck.ok) throw new Error('Backend Health Check Failed');
+            } catch (netErr) {
+                throw new Error('Không thể kết nối tới Backend (Port 8080). Hãy kiểm tra Server đã nhận lệnh chạy chưa.');
+            }
+
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout for DeepSeek
 
             const response = await fetch('http://127.0.0.1:8080/api/public/ai/chat', {
                 method: 'POST',
@@ -53,25 +63,55 @@ const AIChatWidget = () => {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Server error response:', errorText);
-                throw new Error(`Server error: ${response.status}`);
+                throw new Error(`Lỗi Server (${response.status}): ${errorText || 'Unknown Error'}`);
             }
 
             const data = await response.json();
             console.log('AI Response data:', data);
-            setMessages([...newMessages, { role: 'ai', content: data.reply }]);
+
+            let aiReply = data.reply;
+
+            // --- DETECT ADD TO CART COMMAND ---
+            // Regex to find [ADD_TO_CART:123]
+            const addToCartRegex = /\[ADD_TO_CART:(\d+)\]/;
+            const match = aiReply.match(addToCartRegex);
+
+            if (match) {
+                const productId = match[1];
+                console.log('AI requested Add To Cart, Product ID:', productId);
+
+                // Remove the command tag from the visible message
+                aiReply = aiReply.replace(addToCartRegex, '').trim();
+
+                // Fetch Product Details
+                try {
+                    const prodRes = await fetch(`http://127.0.0.1:8080/api/public/products/${productId}`);
+                    if (prodRes.ok) {
+                        const product = await prodRes.json();
+                        addToCart(product, 1); // Add 1 item
+                        aiReply += "\n\n✅ Đã thêm sản phẩm vào giỏ hàng!";
+                    } else {
+                        console.error('Failed to fetch product details for cart');
+                    }
+                } catch (cartErr) {
+                    console.error('Error adding to cart:', cartErr);
+                }
+            }
+
+            setMessages(prev => [...prev, { role: 'ai', content: aiReply }]);
             if (data.suggestions) setSuggestions(data.suggestions);
         } catch (error) {
+            let errorMessage = 'Đã có lỗi xảy ra.';
             if (error.name === 'AbortError') {
-                console.error('Chat request timed out');
-                setMessages([...newMessages, { role: 'ai', content: 'Hệ thống AI đang phản hồi chậm. Bạn vui lòng thử lại sau giây lát nhé.' }]);
+                errorMessage = 'Hệ thống AI phản hồi quá lâu (Timeout).';
             } else {
-                console.error('Chat error detail:', error);
-                setMessages([...newMessages, { role: 'ai', content: `Lỗi kết nối: ${error.message}. Hãy chắc chắn Backend đang chạy tại port 8080 và Groq API Key đã được thiết lập.` }]);
+                errorMessage = error.message;
             }
+            console.error('Chat error detail:', error);
+            setMessages(prev => [...prev, { role: 'ai', content: `⚠️ ${errorMessage}` }]);
         } finally {
             setLoading(false);
         }
-
     };
 
     return (
